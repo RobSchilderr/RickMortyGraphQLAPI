@@ -1,45 +1,90 @@
-import { ApolloClient, gql, InMemoryCache } from '@apollo/client';
 import Head from 'next/head';
 import { useState } from 'react';
+import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 import styles from '../styles/Home.module.css';
 import {
   Heading,
-  Box,
-  Flex,
   Input,
   Stack,
   IconButton,
+  Box,
+  Flex,
   useToast,
 } from '@chakra-ui/react';
-import Character from '../Components/Characters';
+import { SearchIcon, CloseIcon } from '@chakra-ui/icons';
+
+import Character from '../components/Characters';
 
 export default function Home(results) {
-  const initialState = results;
-  const [characters, setCharacters] = useState(initialState.characters);
+  const intialState = results;
+  const [search, setSearch] = useState('');
+  const [characters, setCharacters] = useState(intialState.characters);
+  const toast = useToast();
 
-  console.log(initialState);
   return (
     <Flex direction="column" justify="center" align="center">
       <Head>
-        <title>Create Next App</title>
+        <title>NextJS Apollo Crash Course</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
+
       <Box mb={4} flexDirection="column" align="center" justify="center" py={8}>
         <Heading as="h1" size="2xl" mb={8}>
-          Rick and Morty
+          Rick and Morty{' '}
         </Heading>
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault();
+            const results = await fetch('/api/SearchCharacters', {
+              method: 'post',
+              body: search,
+            });
+            const { characters, error } = await results.json();
+            if (error) {
+              toast({
+                position: 'bottom',
+                title: 'An error occurred.',
+                description: error,
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+              });
+            } else {
+              setCharacters(characters);
+            }
+          }}
+        >
+          <Stack maxWidth="350px" width="100%" isInline mb={8}>
+            <Input
+              placeholder="Search"
+              value={search}
+              border="none"
+              onChange={(e) => setSearch(e.target.value)}
+            ></Input>
+            <IconButton
+              colorScheme="blue"
+              aria-label="Search database"
+              icon={<SearchIcon />}
+              disabled={search === ''}
+              type="submit"
+            />
+            <IconButton
+              colorScheme="red"
+              aria-label="Reset "
+              icon={<CloseIcon />}
+              disabled={search === ''}
+              onClick={async () => {
+                setSearch('');
+                setCharacters(intialState.characters);
+              }}
+            />
+          </Stack>
+        </form>
         <Character characters={characters} />
       </Box>
 
       <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
+        Powered by Energy Drinks 🥫 and YouTube Subscribers.
       </footer>
     </Flex>
   );
@@ -62,19 +107,19 @@ export async function getStaticProps() {
             name
             id
             location {
-              id
               name
-            }
-            origin {
-              id
-              name
-            }
-            episode {
-              episode
-              air_date
               id
             }
             image
+            origin {
+              name
+              id
+            }
+            episode {
+              id
+              episode
+              air_date
+            }
           }
         }
       }
